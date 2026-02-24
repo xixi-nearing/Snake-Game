@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neon Serpent: Rich Snake</title>
+  <link rel="stylesheet" href="styles.css?v=20260225-3" />
+</head>
+<body>
+  <div class="ambient">
+    <div class="ambient__ring"></div>
+    <div class="ambient__ring ambient__ring--alt"></div>
+    <div class="ambient__grid"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__title">NEON SERPENT</span>
+      <span class="brand__tag">多维玩法 · 霓虹竞速 · 高风险高回报</span>
+    </div>
+    <div class="status">
+      <span class="status__badge" id="statusBadge">READY</span>
+      <span class="status__seed" id="seedDisplay">SEED: 0000</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="playfield">
+      <div class="canvas-shell">
+        <canvas id="gameCanvas" aria-label="Snake game canvas"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay__panel">
+            <h1>霓虹贪吃蛇</h1>
+            <p>点击“启动”或空格继续战斗。</p>
+            <button class="btn btn--primary" id="startBtn">启动</button>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="legend__item"><span class="dot dot--food"></span>能量晶体</div>
+        <div class="legend__item"><span class="dot dot--bonus"></span>爆燃核心</div>
+        <div class="legend__item"><span class="dot dot--toxic"></span>腐蚀残渣</div>
+        <div class="legend__item"><span class="dot dot--power"></span>异能模块</div>
+        <div class="legend__item"><span class="dot dot--portal"></span>跃迁门</div>
+        <div class="legend__item"><span class="dot dot--hazard"></span>离子屏障</div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <section class="panel__block">
+        <h2>战局</h2>
+        <div class="stats">
+          <div class="stat"><span>分数</span><strong id="scoreDisplay">0</strong></div>
+          <div class="stat"><span>最高</span><strong id="bestDisplay">0</strong></div>
+          <div class="stat"><span>云端最高</span><strong id="serverBestDisplay">-</strong></div>
+          <div class="stat"><span>等级</span><strong id="levelDisplay">1</strong></div>
+          <div class="stat"><span>速度</span><strong id="speedDisplay">0</strong></div>
+          <div class="stat"><span>倍率</span><strong id="multiplierDisplay">1x</strong></div>
+          <div class="stat"><span>连击</span><strong id="comboDisplay">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel__block">
+        <h2>模式</h2>
+        <div class="mode-select">
+          <label><input type="radio" name="mode" value="classic" checked /> 经典模式</label>
+          <label><input type="radio" name="mode" value="survival" /> 生存模式</label>
+          <label><input type="radio" name="mode" value="time" /> 限时模式</label>
+        </div>
+        <div class="mode-stats">
+          <div class="stat"><span>生命</span><strong id="livesDisplay">-</strong></div>
+          <div class="stat"><span>剩余时间</span><strong id="timeDisplay">-</strong></div>
+        </div>
+      </section>
+
+      <section class="panel__block">
+        <h2>异能增幅</h2>
+        <div class="effects" id="effectsList">
+          <div class="effect effect--empty">尚未激活</div>
+        </div>
+      </section>
+
+      <section class="panel__block panel__block--skin">
+        <h2>皮肤</h2>
+        <div class="skin-select">
+          <select id="skinSelect" aria-label="Snake skin">
+            <option value="neon">霓虹</option>
+            <option value="ocean">海洋</option>
+            <option value="forest">森林</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="panel__block">
+        <h2>控制</h2>
+        <div class="controls">
+          <button class="btn" id="pauseBtn">暂停</button>
+          <button class="btn" id="resetBtn">重置</button>
+          <label class="toggle">
+            <input type="checkbox" id="soundToggle" />
+            <span>音效</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="gridToggle" checked />
+            <span>网格</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel__block panel__block--tips">
+        <h2>战术提示</h2>
+        <ul class="tips">
+          <li>连击越高倍率越强，节奏要快。</li>
+          <li>护盾可抵挡一次撞击，别浪费。</li>
+          <li>磁力场能吸附附近能量。</li>
+          <li>时间模式可通过爆燃核心延时。</li>
+        </ul>
+      </section>
+
+      <section class="panel__block">
+        <h2>数据管理</h2>
+        <button class="btn btn--ghost" id="clearDataBtn">清空记录</button>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div>操作：方向键 / WASD · 空格 / ESC 暂停 · R 重置</div>
+    <div>收集能量、驾驭异能、突破高阶关卡</div>
+  </footer>
+
+  <script src="main.js?v=20260225-3"></script>
+</body>
+</html>

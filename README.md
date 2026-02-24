@@ -1,0 +1,40 @@
+# Neon Serpent: Rich Snake
+
+一个高复杂度、霓虹风格、纯前端的贪吃蛇小游戏。包含多模式、异能系统、粒子特效、音效、皮肤选择与本地数据持久化，并支持可选的云端排行榜接口。
+
+## Features
+- 多模式：经典 / 生存 / 限时
+- 异能系统：护盾、磁力、加速、冻结、彩虹等
+- 事件/机制：传送门、移动屏障、连击倍率
+- 视觉：霓虹 UI、粒子特效（星屑/花瓣/叶片/彩虹）
+- 皮肤：霓虹 / 海洋 / 森林
+- 音效 + 本地数据持久化（localStorage）
+- 可选：云端最高分（/api 接口）
+
+## Controls
+- 方向键 / WASD：移动
+- 空格 / ESC：暂停
+- R：重置
+- 面板按钮：暂停、重置、音效、网格开关
+
+## Run Locally
+直接用静态服务器打开即可：
+
+```bash
+# 任选其一
+python3 -m http.server
+# 或
+npx serve .
+```
+
+然后访问 `http://localhost:8000`（或命令提示的端口）。
+
+## Project Structure
+- `neon-snake/`：前端游戏源码
+- `neon-snake-game-plan.md`：策划/实现规划记录
+
+## Optional API
+前端会尝试访问 `/api/stats`，如果部署了后端可显示“云端最高分”。
+
+## License
+MIT
