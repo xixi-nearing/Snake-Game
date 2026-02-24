@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Neon Serpent: Rich Snake</title>
-  <link rel="stylesheet" href="styles.css?v=20260225-3" />
+  <link rel="stylesheet" href="styles.css?v=20260225-4" />
 </head>
 <body>
   <div class="ambient">
@@ -41,6 +41,7 @@
         <div class="legend__item"><span class="dot dot--bonus"></span>爆燃核心</div>
         <div class="legend__item"><span class="dot dot--toxic"></span>腐蚀残渣</div>
         <div class="legend__item"><span class="dot dot--power"></span>异能模块</div>
+        <div class="legend__item"><span class="dot dot--relic"></span>霓晶遗物</div>
         <div class="legend__item"><span class="dot dot--portal"></span>跃迁门</div>
         <div class="legend__item"><span class="dot dot--hazard"></span>离子屏障</div>
       </div>
@@ -71,6 +72,23 @@
           <div class="stat"><span>生命</span><strong id="livesDisplay">-</strong></div>
           <div class="stat"><span>剩余时间</span><strong id="timeDisplay">-</strong></div>
         </div>
+        <div class="protocol-select">
+          <label>
+            <input type="radio" name="protocol" value="steady" checked />
+            <span>稳态协议</span>
+            <em>更安全</em>
+          </label>
+          <label>
+            <input type="radio" name="protocol" value="surge" />
+            <span>过载协议</span>
+            <em>更高风险</em>
+          </label>
+          <label>
+            <input type="radio" name="protocol" value="sync" />
+            <span>连携协议</span>
+            <em>连击专精</em>
+          </label>
+        </div>
       </section>
 
       <section class="panel__block">
@@ -78,6 +96,20 @@
         <div class="effects" id="effectsList">
           <div class="effect effect--empty">尚未激活</div>
         </div>
+      </section>
+
+      <section class="panel__block panel__block--contracts">
+        <h2>合约目标</h2>
+        <div class="contracts" id="contractsList"></div>
+      </section>
+
+      <section class="panel__block panel__block--upgrades">
+        <h2>霓晶改造</h2>
+        <div class="shard-bar">
+          <span>霓晶储备</span>
+          <strong id="shardDisplay">0</strong>
+        </div>
+        <div class="upgrades" id="upgradesList"></div>
       </section>
 
       <section class="panel__block panel__block--skin">
@@ -117,7 +149,7 @@
         </ul>
       </section>
 
-      <section class="panel__block">
+      <section class="panel__block panel__block--data">
         <h2>数据管理</h2>
         <button class="btn btn--ghost" id="clearDataBtn">清空记录</button>
       </section>
@@ -129,6 +161,6 @@
     <div>收集能量、驾驭异能、突破高阶关卡</div>
   </footer>
 
-  <script src="main.js?v=20260225-3"></script>
+  <script src="main.js?v=20260225-4"></script>
 </body>
 </html>

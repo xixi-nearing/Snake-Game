@@ -22,8 +22,12 @@ const livesDisplay = document.getElementById('livesDisplay');
 const timeDisplay = document.getElementById('timeDisplay');
 const effectsList = document.getElementById('effectsList');
 const skinSelect = document.getElementById('skinSelect');
+const contractsList = document.getElementById('contractsList');
+const shardDisplay = document.getElementById('shardDisplay');
+const upgradesList = document.getElementById('upgradesList');
 
 const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
+const protocolInputs = Array.from(document.querySelectorAll('input[name="protocol"]'));
 
 const CONFIG = {
   cols: 28,
@@ -44,6 +48,7 @@ const ITEM_DEFS = {
   bonus: { score: 25, grow: 2, ttl: 6000, color: '#ff3df0' },
   toxic: { score: -15, grow: -2, ttl: 7000, color: '#ff5978' },
   power: { score: 12, grow: 0, ttl: 7000, color: '#4bff88' },
+  relic: { score: 16, grow: 0, ttl: 8000, color: '#ffd166' },
 };
 
 const SKINS = {
@@ -52,12 +57,49 @@ const SKINS = {
   forest: { base: 115, spread: 80, sat: 70, light: 50, shimmer: 0.12 },
 };
 
+const PROTOCOLS = {
+  steady: {
+    label: '稳态协议',
+    speed: -0.6,
+    hazard: -3,
+    mover: -1,
+    score: 0.9,
+    combo: 600,
+    magnet: 0,
+    shield: 1,
+    specialRate: 1.1,
+  },
+  surge: {
+    label: '过载协议',
+    speed: 1.2,
+    hazard: 4,
+    mover: 1,
+    score: 1.2,
+    combo: -300,
+    magnet: 0,
+    shield: 0,
+    specialRate: 0.85,
+  },
+  sync: {
+    label: '连携协议',
+    speed: 0.3,
+    hazard: 0,
+    mover: 0,
+    score: 1.05,
+    combo: 1200,
+    magnet: 1,
+    shield: 0,
+    specialRate: 1,
+  },
+};
+
 const PARTICLE_STYLES = {
   food: { type: 'spark', count: [8, 12], size: [0.1, 0.16], life: [260, 420], speed: [0.02, 0.045], alpha: 0.6 },
   bonus: { type: 'star', count: [12, 16], size: [0.16, 0.22], life: [380, 560], speed: [0.03, 0.06], alpha: 0.75 },
   power: { type: 'petal', count: [10, 14], size: [0.18, 0.26], life: [480, 720], speed: [0.02, 0.045], alpha: 0.55 },
   toxic: { type: 'leaf', count: [8, 12], size: [0.18, 0.28], life: [520, 820], speed: [0.015, 0.035], alpha: 0.5 },
   rainbow: { type: 'orb', count: [14, 18], size: [0.14, 0.22], life: [420, 720], speed: [0.02, 0.05], alpha: 0.7 },
+  relic: { type: 'prism', count: [10, 14], size: [0.18, 0.26], life: [420, 680], speed: [0.02, 0.045], alpha: 0.65 },
 };
 
 const POWER_TYPES = [
@@ -70,6 +112,30 @@ const POWER_TYPES = [
   { id: 'rainbow', label: '虹蛇', duration: 15000, color: '#ffd166' },
 ];
 
+const CONTRACT_POOL = [
+  { id: 'eat', label: '能量连锁', type: 'eat', target: 6, reward: { score: 140, shards: 2 } },
+  { id: 'power', label: '异能采集', type: 'power', target: 2, reward: { score: 180, shards: 3 } },
+  { id: 'bonus', label: '爆燃收藏', type: 'bonus', target: 2, reward: { score: 160, shards: 2 } },
+  { id: 'portal', label: '跃迁试炼', type: 'portal', target: 3, reward: { score: 150, shards: 2 } },
+  { id: 'combo', label: '连击风暴', type: 'combo', target: 4, reward: { score: 200, shards: 3 } },
+  { id: 'survive', label: '轨迹稳定', type: 'survive', target: 30, reward: { score: 150, shards: 2 } },
+  { id: 'level', label: '层级突破', type: 'level', target: 4, reward: { score: 190, shards: 3 } },
+  { id: 'score', label: '霓光冲刺', type: 'score', target: 520, reward: { score: 220, shards: 4 } },
+];
+
+const UPGRADES = [
+  { id: 'magnet', label: '磁场扩展', desc: '吸附范围 +1', max: 3, baseCost: 6, growth: 4 },
+  { id: 'shield', label: '护盾储备', desc: '开局护盾 +1', max: 2, baseCost: 9, growth: 6 },
+  { id: 'combo', label: '连击缓存', desc: '连击窗口 +0.6s', max: 4, baseCost: 7, growth: 4 },
+];
+
+const SPECIAL_TIMER_RANGES = {
+  bonus: [2600, 5200],
+  toxic: [3200, 5600],
+  power: [3000, 5200],
+  relic: [4200, 7600],
+};
+
 let rngSeed = Date.now() % 100000;
 
 const audio = {
@@ -81,6 +147,7 @@ const state = {
   running: false,
   paused: false,
   mode: 'classic',
+  protocol: 'steady',
   score: 0,
   level: 1,
   lives: 0,
@@ -100,6 +167,10 @@ const state = {
   shield: 0,
   portalCooldown: 0,
   stepCount: 0,
+  runShards: 0,
+  contracts: [],
+  contractsDirty: true,
+  shopDirty: true,
 };
 
 let cellSize = 20;
@@ -112,10 +183,12 @@ let obstacles = [];
 let movers = [];
 let portals = [];
 let particles = [];
+let ripples = [];
 let specialTimers = {
   bonus: 0,
   toxic: 0,
   power: 0,
+  relic: 0,
 };
 
 let lastTime = 0;
@@ -130,7 +203,8 @@ function init() {
 
   soundToggle.checked = dataStore.settings.sound;
   gridToggle.checked = dataStore.settings.grid;
-  setMode(dataStore.settings.mode || 'classic');
+  setMode(dataStore.settings.mode || 'classic', true);
+  setProtocol(dataStore.settings.protocol || 'steady', true);
   skinSelect.value = dataStore.settings.skin || 'neon';
 
   resizeCanvas();
@@ -169,6 +243,21 @@ function init() {
     });
   });
 
+  protocolInputs.forEach((input) => {
+    input.addEventListener('change', (event) => {
+      if (event.target.checked) {
+        setProtocol(event.target.value);
+      }
+    });
+  });
+
+  upgradesList.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-upgrade]');
+    if (button) {
+      purchaseUpgrade(button.dataset.upgrade);
+    }
+  });
+
   document.addEventListener('keydown', handleKeydown);
 
   resetGame(false);
@@ -179,10 +268,12 @@ function init() {
 
 function loadStore() {
   const fallback = {
-    settings: { sound: true, grid: true, mode: 'classic', skin: 'neon' },
+    settings: { sound: true, grid: true, mode: 'classic', skin: 'neon', protocol: 'steady' },
     best: { classic: 0, survival: 0, time: 0 },
     maxLevel: 1,
     seed: rngSeed,
+    shards: 0,
+    upgrades: { magnet: 0, shield: 0, combo: 0 },
   };
 
   try {
@@ -194,6 +285,8 @@ function loadStore() {
       best: { ...fallback.best, ...(data.best || {}) },
       maxLevel: data.maxLevel || 1,
       seed: data.seed || rngSeed,
+      shards: typeof data.shards === 'number' ? data.shards : fallback.shards,
+      upgrades: { ...fallback.upgrades, ...(data.upgrades || {}) },
     };
   } catch (error) {
     return fallback;
@@ -208,18 +301,59 @@ function persistStore() {
 function clearData() {
   localStorage.removeItem(STORAGE_KEY);
   dataStore = loadStore();
-  setMode('classic');
+  setMode('classic', true);
+  setProtocol('steady', true);
+  resetGame(false);
 }
 
-function setMode(mode) {
+function setMode(mode, skipReset = false) {
   state.mode = mode;
   dataStore.settings.mode = mode;
   modeInputs.forEach((input) => {
     input.checked = input.value === mode;
   });
   persistStore();
-  resetGame(false);
+  if (!skipReset) {
+    resetGame(false);
+  }
   updateServerBest();
+}
+
+function setProtocol(protocol, skipReset = false) {
+  state.protocol = PROTOCOLS[protocol] ? protocol : 'steady';
+  dataStore.settings.protocol = state.protocol;
+  protocolInputs.forEach((input) => {
+    input.checked = input.value === state.protocol;
+  });
+  persistStore();
+  if (!skipReset) {
+    resetGame(false);
+  }
+}
+
+function buildSpecialTimers() {
+  const rate = getProtocolConfig().specialRate || 1;
+  return {
+    bonus: 1800 * rate,
+    toxic: 2400 * rate,
+    power: 2800 * rate,
+    relic: 3600 * rate,
+  };
+}
+
+function generateContracts() {
+  const pool = [...CONTRACT_POOL];
+  const picks = [];
+  while (picks.length < 2 && pool.length) {
+    const index = randInt(0, pool.length - 1);
+    const chosen = pool.splice(index, 1)[0];
+    picks.push({
+      ...chosen,
+      progress: 0,
+      done: false,
+    });
+  }
+  return picks;
 }
 
 function resetGame(keepOverlay) {
@@ -231,10 +365,11 @@ function resetGame(keepOverlay) {
   state.comboTimer = 0;
   state.multiplier = 1;
   state.effects = { speed: 0, slow: 0, ghost: 0, magnet: 0, multiplier: 0, rainbow: 0 };
-  state.shield = 0;
+  state.shield = getStartShield();
   state.portalCooldown = 0;
   state.stepCount = 0;
   state.growth = 0;
+  state.runShards = 0;
   state.lives = state.mode === 'survival' ? 3 : 0;
   state.timeLeft = state.mode === 'time' ? CONFIG.timeLimit : 0;
 
@@ -247,11 +382,11 @@ function resetGame(keepOverlay) {
   movers = [];
   portals = [];
   particles = [];
-  specialTimers = {
-    bonus: 1800,
-    toxic: 2400,
-    power: 2800,
-  };
+  ripples = [];
+  specialTimers = buildSpecialTimers();
+  state.contracts = generateContracts();
+  state.contractsDirty = true;
+  state.shopDirty = true;
 
   buildLevel();
   ensureFood();
@@ -349,9 +484,11 @@ function update(stepMs) {
   updateEffects(stepMs);
   updateCombo(stepMs);
   updateTime(stepMs);
+  updateContracts(stepMs);
   updateLevel();
   updateItems(stepMs);
   updateParticles(stepMs);
+  updateRipples(stepMs);
   updateMovers();
   moveSnake();
   emitRainbowTrail();
@@ -379,6 +516,12 @@ function updateCombo(stepMs) {
   state.multiplier = 1 + comboTier + powerBoost;
 }
 
+function updateContracts(stepMs) {
+  if (!state.contracts.length) return;
+  addContractProgress('survive', stepMs / 1000);
+  setContractProgress('score', state.score);
+}
+
 function updateTime(stepMs) {
   if (state.mode !== 'time') return;
   state.timeLeft = Math.max(0, state.timeLeft - stepMs / 1000);
@@ -394,7 +537,9 @@ function updateLevel() {
     dataStore.maxLevel = Math.max(dataStore.maxLevel, state.level);
     persistStore();
     buildLevel();
+    setContractProgress('level', state.level);
     pulseScreen();
+    spawnRipple(canvasSize / 2, canvasSize / 2, '#24f6ff');
     playTone(860, 0.12, 'sawtooth', 0.08);
   }
 }
@@ -407,13 +552,15 @@ function updateItems(stepMs) {
   });
 
   const specials = items.filter((item) => item.kind !== 'food');
-  const limit = Math.min(4, 1 + Math.floor(state.level / 3));
+  const limit = Math.min(5, 1 + Math.floor(state.level / 3));
+  const specialRate = getProtocolConfig().specialRate || 1;
 
   Object.keys(specialTimers).forEach((key) => {
     specialTimers[key] -= stepMs;
     if (specialTimers[key] <= 0 && specials.length < limit) {
       spawnSpecial(key);
-      specialTimers[key] = randRange(2800, 5200);
+      const range = SPECIAL_TIMER_RANGES[key] || [2800, 5200];
+      specialTimers[key] = randRange(range[0], range[1]) * specialRate;
     }
   });
 
@@ -473,6 +620,8 @@ function moveSnake() {
       newX = portal.x;
       newY = portal.y;
       state.portalCooldown = 3;
+      addContractProgress('portal', 1);
+      spawnRipple(newX * cellSize + cellSize / 2, newY * cellSize + cellSize / 2, '#7b5cff');
       playTone(620, 0.08, 'triangle', 0.06);
     }
   }
@@ -511,7 +660,7 @@ function applyItem(item) {
     } else {
       state.combo = 1;
     }
-    state.comboTimer = CONFIG.comboWindow;
+    state.comboTimer = getComboWindow();
   } else {
     state.combo = 0;
     state.comboTimer = 0;
@@ -521,8 +670,11 @@ function applyItem(item) {
   const powerBoost = state.effects.multiplier > 0 ? 1 : 0;
   const multiplier = 1 + comboTier + powerBoost;
   state.multiplier = multiplier;
-  const scoreDelta = baseScore > 0 ? Math.floor(baseScore * multiplier) : baseScore;
+  const scoreFactor = baseScore > 0 ? multiplier * getProtocolConfig().score : 1;
+  const scoreDelta = baseScore > 0 ? Math.floor(baseScore * scoreFactor) : baseScore;
   state.score = Math.max(0, state.score + scoreDelta);
+  setContractProgress('combo', state.combo);
+  setContractProgress('score', state.score);
 
   if (def.grow > 0) {
     state.growth += def.grow;
@@ -535,11 +687,19 @@ function applyItem(item) {
     state.timeLeft += CONFIG.bonusTime;
   }
 
+  if (item.kind === 'relic') {
+    grantShards(randRange(1, 3));
+    spawnRipple(item.x * cellSize + cellSize / 2, item.y * cellSize + cellSize / 2, '#ffd166');
+    playTone(520, 0.1, 'triangle', 0.08);
+  }
+
   if (item.kind === 'power') {
     activatePower(item.powerType);
-  } else {
+  } else if (item.kind !== 'relic') {
     playTone(item.kind === 'toxic' ? 220 : 520, 0.08, 'square', 0.07);
   }
+
+  trackContractItem(item);
 }
 
 function activatePower(powerId) {
@@ -611,6 +771,13 @@ function updateHUD() {
   livesDisplay.textContent = state.mode === 'survival' ? state.lives : '-';
   timeDisplay.textContent = state.mode === 'time' ? formatTime(state.timeLeft) : '-';
   renderEffects();
+  updateShardDisplay();
+  if (state.contractsDirty) {
+    renderContracts();
+  }
+  if (state.shopDirty) {
+    renderUpgrades();
+  }
 }
 
 function renderEffects() {
@@ -646,8 +813,142 @@ function renderEffects() {
   });
 }
 
+function trackContractItem(item) {
+  if (item.kind !== 'toxic') {
+    addContractProgress('eat', 1);
+  }
+  if (item.kind === 'bonus') {
+    addContractProgress('bonus', 1);
+  }
+  if (item.kind === 'power') {
+    addContractProgress('power', 1);
+  }
+}
+
+function addContractProgress(type, amount) {
+  let updated = false;
+  state.contracts.forEach((contract) => {
+    if (contract.done || contract.type !== type) return;
+    contract.progress = Math.min(contract.target, contract.progress + amount);
+    updated = true;
+    if (contract.progress >= contract.target) {
+      completeContract(contract);
+    }
+  });
+  if (updated) {
+    state.contractsDirty = true;
+  }
+}
+
+function setContractProgress(type, value) {
+  let updated = false;
+  state.contracts.forEach((contract) => {
+    if (contract.done || contract.type !== type) return;
+    const next = Math.min(contract.target, value);
+    if (next !== contract.progress) {
+      contract.progress = next;
+      updated = true;
+      if (contract.progress >= contract.target) {
+        completeContract(contract);
+      }
+    }
+  });
+  if (updated) {
+    state.contractsDirty = true;
+  }
+}
+
+function completeContract(contract) {
+  contract.done = true;
+  state.score += contract.reward.score;
+  grantShards(contract.reward.shards);
+  spawnRipple(canvasSize / 2, canvasSize / 2, '#4bff88');
+  playTone(840, 0.12, 'sawtooth', 0.09);
+  state.contractsDirty = true;
+}
+
+function renderContracts() {
+  contractsList.innerHTML = '';
+  if (!state.contracts.length) {
+    const empty = document.createElement('div');
+    empty.className = 'contract';
+    empty.textContent = '暂无合约';
+    contractsList.appendChild(empty);
+    return;
+  }
+
+  state.contracts.forEach((contract) => {
+    const row = document.createElement('div');
+    row.className = `contract${contract.done ? ' contract--done' : ''}`;
+    const progressText =
+      contract.type === 'survive'
+        ? `${Math.floor(contract.progress)}s/${contract.target}s`
+        : `${Math.floor(contract.progress)}/${contract.target}`;
+    row.innerHTML = `
+      <div>
+        <strong>${contract.label}</strong>
+        <div class="contract__meta">奖励 +${contract.reward.score} · 霓晶 +${contract.reward.shards}</div>
+      </div>
+      <div>${progressText}</div>
+    `;
+    contractsList.appendChild(row);
+  });
+  state.contractsDirty = false;
+}
+
+function grantShards(amount) {
+  if (amount <= 0) return;
+  dataStore.shards += amount;
+  state.runShards += amount;
+  persistStore();
+  state.shopDirty = true;
+}
+
+function updateShardDisplay() {
+  const bonusText = state.runShards > 0 ? ` (+${state.runShards})` : '';
+  shardDisplay.textContent = `${dataStore.shards}${bonusText}`;
+}
+
+function renderUpgrades() {
+  upgradesList.innerHTML = '';
+  UPGRADES.forEach((upgrade) => {
+    const level = getUpgradeLevel(upgrade.id);
+    const cost = getUpgradeCost(upgrade);
+    const canBuy = dataStore.shards >= cost && level < upgrade.max;
+    const row = document.createElement('div');
+    row.className = 'upgrade';
+    row.innerHTML = `
+      <div class="upgrade__info">
+        <span>${upgrade.label} Lv.${level}/${upgrade.max}</span>
+        <em>${upgrade.desc}</em>
+      </div>
+      <div class="upgrade__cta">
+        <button class="btn" data-upgrade="${upgrade.id}" ${canBuy ? '' : 'disabled'}>改造</button>
+        <div class="upgrade__cost">霓晶 ${level >= upgrade.max ? 'MAX' : cost}</div>
+      </div>
+    `;
+    upgradesList.appendChild(row);
+  });
+  state.shopDirty = false;
+}
+
+function purchaseUpgrade(upgradeId) {
+  const upgrade = UPGRADES.find((item) => item.id === upgradeId);
+  if (!upgrade) return;
+  const level = getUpgradeLevel(upgrade.id);
+  if (level >= upgrade.max) return;
+  const cost = getUpgradeCost(upgrade);
+  if (dataStore.shards < cost) return;
+  dataStore.shards -= cost;
+  dataStore.upgrades[upgrade.id] = level + 1;
+  persistStore();
+  state.shopDirty = true;
+  playTone(560, 0.12, 'triangle', 0.08);
+}
+
 function getCurrentSpeed() {
   let speed = CONFIG.baseSpeed + (state.level - 1) * 0.6;
+  speed += getProtocolConfig().speed;
   if (state.effects.speed > 0) speed += 3.5;
   if (state.effects.slow > 0) speed -= 2.5;
   speed = Math.max(4, Math.min(CONFIG.maxSpeed, speed));
@@ -660,8 +961,9 @@ function buildLevel() {
   portals = [];
   items = [];
 
-  const obstacleCount = Math.min(40, 5 + state.level * 2);
-  const moverCount = Math.min(6, Math.floor(state.level / 3));
+  const protocol = getProtocolConfig();
+  const obstacleCount = Math.min(40, Math.max(0, 5 + state.level * 2 + protocol.hazard));
+  const moverCount = Math.min(6, Math.max(0, Math.floor(state.level / 3) + protocol.mover));
   const portalPairs = state.level >= 3 ? 1 + Math.floor((state.level - 3) / 4) : 0;
 
   let occupied = new Set();
@@ -719,6 +1021,8 @@ function spawnSpecial(kind) {
     spawnItem('bonus');
   } else if (kind === 'toxic') {
     spawnItem('toxic');
+  } else if (kind === 'relic') {
+    spawnItem('relic');
   }
 }
 
@@ -826,10 +1130,11 @@ function getOccupiedSet() {
 }
 
 function applyMagnet() {
+  const radius = getMagnetRadius();
   items.forEach((item) => {
     if (item.kind === 'toxic') return;
     const distance = Math.abs(item.x - snake[0].x) + Math.abs(item.y - snake[0].y);
-    if (distance > CONFIG.magnetRadius) return;
+    if (distance > radius) return;
 
     const dx = Math.sign(snake[0].x - item.x);
     const dy = Math.sign(snake[0].y - item.y);
@@ -959,6 +1264,37 @@ function skinColor(ratio) {
   return `hsl(${hue}, ${skin.sat}%, ${skin.light}%)`;
 }
 
+function getProtocolConfig() {
+  return PROTOCOLS[state.protocol] || PROTOCOLS.steady;
+}
+
+function getUpgradeLevel(id) {
+  return dataStore.upgrades?.[id] || 0;
+}
+
+function getUpgradeCost(upgrade) {
+  const level = getUpgradeLevel(upgrade.id);
+  return upgrade.baseCost + level * upgrade.growth;
+}
+
+function getComboWindow() {
+  const base = CONFIG.comboWindow;
+  const upgrade = getUpgradeLevel('combo') * 600;
+  const protocol = getProtocolConfig().combo || 0;
+  return Math.max(800, base + upgrade + protocol);
+}
+
+function getStartShield() {
+  const protocol = getProtocolConfig();
+  const base = getUpgradeLevel('shield') + protocol.shield;
+  return Math.min(3, Math.max(0, base));
+}
+
+function getMagnetRadius() {
+  const protocol = getProtocolConfig();
+  return CONFIG.magnetRadius + getUpgradeLevel('magnet') + (protocol.magnet || 0);
+}
+
 function randomChoice(list) {
   return list[Math.floor(rand() * list.length)];
 }
@@ -986,6 +1322,7 @@ function render() {
   if (gridToggle.checked) {
     drawGrid();
   }
+  drawRipples();
   drawPortals();
   drawObstacles();
   drawMovers();
@@ -996,9 +1333,16 @@ function render() {
 
 function drawBackground() {
   ctx.save();
+  const protocol = state.protocol;
+  const palettes = {
+    steady: ['rgba(8, 12, 30, 0.9)', 'rgba(4, 6, 18, 0.9)'],
+    surge: ['rgba(24, 8, 24, 0.9)', 'rgba(14, 4, 14, 0.9)'],
+    sync: ['rgba(6, 18, 28, 0.9)', 'rgba(4, 10, 18, 0.9)'],
+  };
+  const palette = palettes[protocol] || palettes.steady;
   const gradient = ctx.createLinearGradient(0, 0, canvasSize, canvasSize);
-  gradient.addColorStop(0, 'rgba(8, 12, 30, 0.9)');
-  gradient.addColorStop(1, 'rgba(4, 6, 18, 0.9)');
+  gradient.addColorStop(0, palette[0]);
+  gradient.addColorStop(1, palette[1]);
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvasSize, canvasSize);
   ctx.restore();
@@ -1023,6 +1367,48 @@ function drawGrid() {
   ctx.restore();
 }
 
+function updateRipples(stepMs) {
+  ripples.forEach((ripple) => {
+    ripple.life -= stepMs;
+    ripple.radius += ripple.speed * stepMs;
+  });
+  ripples = ripples.filter((ripple) => ripple.life > 0);
+}
+
+function drawRipples() {
+  ripples.forEach((ripple) => {
+    const lifeRatio = Math.max(0, ripple.life / ripple.maxLife);
+    const alpha = ripple.alpha * lifeRatio;
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.strokeStyle = ripple.color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = ripple.color;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function spawnRipple(x, y, color) {
+  ripples.push({
+    x,
+    y,
+    radius: cellSize * 0.4,
+    speed: 0.02 * cellSize,
+    life: 520,
+    maxLife: 520,
+    alpha: 0.45,
+    color,
+  });
+  if (ripples.length > 20) {
+    ripples.splice(0, ripples.length - 20);
+  }
+}
+
 function drawItems() {
   items.forEach((item) => {
     const def = ITEM_DEFS[item.kind];
@@ -1041,6 +1427,14 @@ function drawItems() {
     ctx.beginPath();
     ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.35, 0, Math.PI * 2);
     ctx.fill();
+    if (item.kind === 'relic') {
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = 'rgba(255, 209, 102, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   });
 }
@@ -1065,6 +1459,8 @@ function drawParticles() {
       drawStar(particle.size, particle.size * 0.45, 5);
     } else if (particle.type === 'petal') {
       drawPetal(particle.size);
+    } else if (particle.type === 'prism') {
+      drawPrism(particle.size);
     } else if (particle.type === 'orb') {
       drawOrb(particle.size);
     } else if (particle.type === 'leaf') {
@@ -1106,6 +1502,16 @@ function drawSpark(size) {
 function drawPetal(size) {
   ctx.beginPath();
   ctx.ellipse(0, 0, size * 0.4, size, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawPrism(size) {
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.lineTo(size * 0.8, 0);
+  ctx.lineTo(0, size);
+  ctx.lineTo(-size * 0.6, size * 0.1);
+  ctx.closePath();
   ctx.fill();
 }
 
@@ -1172,6 +1578,9 @@ function drawSnake() {
   });
 
   drawEyes();
+  if (state.shield > 0) {
+    drawShieldAura();
+  }
 }
 
 function drawEyes() {
@@ -1185,6 +1594,21 @@ function drawEyes() {
   ctx.beginPath();
   ctx.arc(head.x * cellSize + cellSize / 2 - eyeOffset, head.y * cellSize + cellSize / 2 - eyeOffset, cellSize * 0.07, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawShieldAura() {
+  const head = snake[0];
+  const centerX = head.x * cellSize + cellSize / 2;
+  const centerY = head.y * cellSize + cellSize / 2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 230, 109, 0.8)';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#ffe66d';
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, cellSize * 0.55, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 
