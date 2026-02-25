@@ -1570,7 +1570,7 @@ function drawOceanTexture(x, y, index, isHead, skin) {
 
   ctx.save();
   ctx.globalAlpha = alpha * 0.75;
-  ctx.fillStyle = skin.textureDeep;
+  ctx.fillStyle = skin.textureAccent;
   ctx.shadowColor = skin.textureAccent;
   ctx.shadowBlur = 6;
   for (let i = 0; i < 2; i += 1) {
