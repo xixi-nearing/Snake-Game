@@ -108,6 +108,7 @@ let accumulator = 0;
 let rafId = null;
 let dataStore = loadStore();
 let serverStats = null;
+let resizeObserver = null;
 
 function init() {
   rngSeed = dataStore.seed || rngSeed;
@@ -138,6 +139,14 @@ function init() {
 
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('orientationchange', resizeCanvas);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resizeCanvas);
+  }
+  if (!resizeObserver && 'ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(() => resizeCanvas());
+    resizeObserver.observe(canvas.parentElement);
+  }
 
   startBtn.addEventListener('click', () => {
     initAudio();
@@ -1229,11 +1238,16 @@ function cellKey(x, y) {
 }
 
 function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const size = Math.min(rect.width, rect.height);
+  const shell = canvas.parentElement;
+  const rect = shell.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
+  const contentWidth = shell.clientWidth || rect.width;
+  const contentHeight = shell.clientHeight || rect.height;
+  const rawSize = Math.min(contentWidth, contentHeight);
+  const size = Math.max(1, Math.floor(rawSize * dpr) / dpr);
+  const pixelSize = Math.max(1, Math.round(size * dpr));
+  canvas.width = pixelSize;
+  canvas.height = pixelSize;
   canvas.style.width = `${size}px`;
   canvas.style.height = `${size}px`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
