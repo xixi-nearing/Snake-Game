@@ -279,7 +279,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: 1rem;
   border-radius: 1rem;
   border: 1px solid rgba(36, 246, 255, 0.18);
   background: rgba(8, 12, 30, 0.72);
@@ -291,8 +291,12 @@ body {
   grid-template-columns: repeat(3, minmax(0, 52px));
   grid-template-rows: repeat(3, minmax(0, 52px));
   gap: 0.4rem;
-  margin-left: auto;
+  margin-right: 0.6rem;
   align-self: center;
+}
+
+.control-dock__pause {
+  margin-left: auto;
 }
 
 .touch-btn {
@@ -937,7 +941,7 @@ body {
   }
 
   .touch-controls {
-    margin-left: 0;
+    margin-right: 0;
     align-self: center;
   }
 
