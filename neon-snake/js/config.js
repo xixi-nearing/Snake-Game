@@ -39,9 +39,49 @@ export const ITEM_DEFS = {
 };
 
 export const SKINS = {
-  neon: { base: 190, spread: 140, sat: 92, light: 60, shimmer: 0.35 },
-  ocean: { base: 200, spread: 70, sat: 85, light: 55, shimmer: 0.18 },
-  forest: { base: 115, spread: 80, sat: 70, light: 50, shimmer: 0.12 },
+  neon: { base: 190, spread: 140, sat: 92, light: 60, shimmer: 0.35, texture: 'neon' },
+  ocean: {
+    base: 200,
+    spread: 70,
+    sat: 85,
+    light: 55,
+    shimmer: 0.18,
+    texture: 'ocean',
+    textureAccent: '#8ff7ff',
+    textureDeep: '#1a6b98',
+    trail: {
+      type: 'orb',
+      count: [2, 3],
+      size: [0.08, 0.14],
+      life: [260, 420],
+      speed: [0.01, 0.03],
+      alpha: 0.38,
+      color: '#7cecff',
+      gravity: -0.00008,
+      spin: 0.004,
+    },
+  },
+  forest: {
+    base: 115,
+    spread: 80,
+    sat: 70,
+    light: 50,
+    shimmer: 0.12,
+    texture: 'forest',
+    textureAccent: '#93ffb4',
+    textureDeep: '#1e6b3d',
+    trail: {
+      type: 'leaf',
+      count: [2, 4],
+      size: [0.1, 0.18],
+      life: [320, 520],
+      speed: [0.008, 0.028],
+      alpha: 0.35,
+      color: '#7dff9a',
+      gravity: 0.00028,
+      spin: 0.006,
+    },
+  },
 };
 
 export const PROTOCOLS = {

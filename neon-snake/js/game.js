@@ -371,6 +371,7 @@ function update(stepMs) {
   updateMovers();
   moveSnake();
   emitRainbowTrail();
+  emitSkinTrail();
   updateHUD();
 }
 
@@ -995,6 +996,42 @@ function emitRainbowTrail() {
   }
 }
 
+function emitSkinTrail() {
+  if (!snake.length || state.effects.rainbow > 0) return;
+  const trail = getSkinTrail();
+  if (!trail) return;
+  const tail = snake[snake.length - 1];
+  const centerX = tail.x * cellSize + cellSize / 2;
+  const centerY = tail.y * cellSize + cellSize / 2;
+  const count = randRange(trail.count[0], trail.count[1]);
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = randFloat(0, Math.PI * 2);
+    const speed = randFloat(trail.speed[0], trail.speed[1]) * cellSize;
+    const size = randFloat(trail.size[0], trail.size[1]) * cellSize;
+    const life = randRange(trail.life[0], trail.life[1]);
+    particles.push({
+      x: centerX,
+      y: centerY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - speed * 0.08,
+      size,
+      type: trail.type,
+      color: trail.color,
+      life,
+      maxLife: life,
+      alpha: trail.alpha,
+      rotation: randFloat(0, Math.PI * 2),
+      spin: randFloat(-trail.spin, trail.spin),
+      gravity: trail.gravity,
+    });
+  }
+
+  if (particles.length > 400) {
+    particles.splice(0, particles.length - 400);
+  }
+}
+
 function getOccupiedSet() {
   const occupied = new Set();
   snake.forEach((seg) => occupied.add(cellKey(seg.x, seg.y)));
@@ -1128,6 +1165,11 @@ function rand() {
   return rngSeed / 233280;
 }
 
+function noise2(x, y, seed) {
+  const n = Math.sin(x * 12.9898 + y * 78.233 + seed * 37.719) * 43758.5453;
+  return n - Math.floor(n);
+}
+
 function rainbowColor(hue) {
   const normalized = ((hue % 360) + 360) % 360;
   return `hsl(${normalized}, 90%, 62%)`;
@@ -1141,6 +1183,10 @@ function skinColor(ratio) {
   const skin = getSkinConfig();
   const hue = (skin.base + skin.spread * ratio + skin.shimmer * state.stepCount) % 360;
   return `hsl(${hue}, ${skin.sat}%, ${skin.light}%)`;
+}
+
+function getSkinTrail() {
+  return getSkinConfig().trail || null;
 }
 
 function getProtocolConfig() {
@@ -1442,8 +1488,105 @@ function drawPortalCell(x, y) {
   ctx.restore();
 }
 
+function drawSkinTexture(x, y, index, isHead) {
+  const skin = getSkinConfig();
+  if (skin.texture === 'forest') {
+    drawForestTexture(x, y, index, isHead, skin);
+  } else if (skin.texture === 'ocean') {
+    drawOceanTexture(x, y, index, isHead, skin);
+  }
+}
+
+function drawForestTexture(x, y, index, isHead, skin) {
+  const baseX = x * cellSize;
+  const baseY = y * cellSize;
+  const seed = x * 17 + y * 31 + index * 7;
+  const t = state.stepCount * 0.08;
+  const alpha = isHead ? 0.32 : 0.5;
+  const bladeCount = 3;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = skin.textureAccent;
+  ctx.shadowColor = skin.textureAccent;
+  ctx.shadowBlur = 8;
+  ctx.lineWidth = Math.max(1, cellSize * 0.05);
+
+  for (let i = 0; i < bladeCount; i += 1) {
+    const nx = noise2(x + i, y, seed + i);
+    const ny = noise2(x, y + i, seed + 11 + i);
+    const px = baseX + cellSize * (0.2 + nx * 0.6);
+    const height = cellSize * (0.18 + ny * 0.22);
+    const sway = Math.sin(t + nx * 6 + index) * cellSize * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(px, baseY + cellSize * 0.78);
+    ctx.quadraticCurveTo(px + sway, baseY + cellSize * 0.62, px + sway * 0.2, baseY + cellSize * 0.55 - height);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.7;
+  ctx.fillStyle = skin.textureAccent;
+  ctx.shadowColor = skin.textureDeep;
+  ctx.shadowBlur = 6;
+  const dotCount = 2;
+  for (let i = 0; i < dotCount; i += 1) {
+    const nx = noise2(x + i, y + i, seed + 29 + i);
+    const ny = noise2(y + i, x + i, seed + 41 + i);
+    const radius = cellSize * (0.05 + nx * 0.03);
+    ctx.beginPath();
+    ctx.arc(baseX + cellSize * (0.2 + nx * 0.6), baseY + cellSize * (0.2 + ny * 0.6), radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawOceanTexture(x, y, index, isHead, skin) {
+  const baseX = x * cellSize;
+  const baseY = y * cellSize;
+  const seed = x * 19 + y * 37 + index * 9;
+  const t = state.stepCount * 0.1;
+  const alpha = isHead ? 0.3 : 0.48;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = skin.textureAccent;
+  ctx.shadowColor = skin.textureAccent;
+  ctx.shadowBlur = 8;
+  ctx.lineWidth = Math.max(1, cellSize * 0.05);
+
+  for (let i = 0; i < 2; i += 1) {
+    const wave = Math.sin(t + i + x * 0.6 + y * 0.4) * cellSize * 0.05;
+    const yPos = baseY + cellSize * (0.35 + i * 0.25) + wave;
+    ctx.beginPath();
+    ctx.moveTo(baseX + cellSize * 0.12, yPos);
+    ctx.quadraticCurveTo(baseX + cellSize * 0.5, yPos + cellSize * 0.1, baseX + cellSize * 0.88, yPos);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.75;
+  ctx.fillStyle = skin.textureDeep;
+  ctx.shadowColor = skin.textureAccent;
+  ctx.shadowBlur = 6;
+  for (let i = 0; i < 2; i += 1) {
+    const nx = noise2(x + i, y + i * 2, seed + 21 + i);
+    const ny = noise2(y + i, x + i * 2, seed + 33 + i);
+    const radius = cellSize * (0.05 + nx * 0.04);
+    ctx.beginPath();
+    ctx.arc(baseX + cellSize * (0.2 + nx * 0.6), baseY + cellSize * (0.2 + ny * 0.6), radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawSnake() {
   const rainbowActive = state.effects.rainbow > 0;
+  const skin = getSkinConfig();
   snake.forEach((seg, index) => {
     if (rainbowActive) {
       const hue = (index * 22 + state.stepCount * 6) % 360;
@@ -1452,7 +1595,11 @@ function drawSnake() {
     } else {
       const ratio = snake.length > 1 ? index / (snake.length - 1) : 0;
       const color = skinColor(ratio);
-      drawGlowRect(seg.x, seg.y, color, 0.1, index === 0 ? 1 : 0.7);
+      const isHead = index === 0;
+      drawGlowRect(seg.x, seg.y, color, 0.1, isHead ? 1 : 0.7);
+      if (skin.texture && skin.texture !== 'neon') {
+        drawSkinTexture(seg.x, seg.y, index, isHead);
+      }
     }
   });
 
