@@ -3,7 +3,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / 'neon-snake' / 'index.html'
-JS_PATH = ROOT / 'neon-snake' / 'main.js'
+JS_PATH = ROOT / 'neon-snake' / 'js' / 'game.js'
 
 errors = []
 
@@ -31,11 +31,11 @@ required_html = [
 ]
 
 required_js = [
-    'setActivePage',
-    'setInputMode',
-    'handleTouchPad',
-    'handleTouchStart',
-    'handleTouchEnd',
+    'createInputController',
+    'createNavigation',
+    'applyDirection',
+    'togglePause',
+    'renderUpgrades',
 ]
 
 for snippet in required_html:

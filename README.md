@@ -36,6 +36,7 @@ npx serve .
 
 ## Project Structure
 - `neon-snake/`：前端游戏源码
+- `neon-snake/js/`：模块化逻辑（配置、输入、导航、存储、音效）
 - `neon-snake-game-plan.md`：策划/实现规划记录
 
 ## Optional API

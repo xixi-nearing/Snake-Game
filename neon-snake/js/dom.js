@@ -1,0 +1,38 @@
+export function getDom() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  return {
+    canvas,
+    ctx,
+    overlay: document.getElementById('overlay'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    clearDataBtn: document.getElementById('clearDataBtn'),
+    soundToggle: document.getElementById('soundToggle'),
+    gridToggle: document.getElementById('gridToggle'),
+    statusBadge: document.getElementById('statusBadge'),
+    seedDisplay: document.getElementById('seedDisplay'),
+    scoreDisplay: document.getElementById('scoreDisplay'),
+    bestDisplay: document.getElementById('bestDisplay'),
+    serverBestDisplay: document.getElementById('serverBestDisplay'),
+    levelDisplay: document.getElementById('levelDisplay'),
+    speedDisplay: document.getElementById('speedDisplay'),
+    multiplierDisplay: document.getElementById('multiplierDisplay'),
+    comboDisplay: document.getElementById('comboDisplay'),
+    livesDisplay: document.getElementById('livesDisplay'),
+    timeDisplay: document.getElementById('timeDisplay'),
+    effectsList: document.getElementById('effectsList'),
+    skinSelect: document.getElementById('skinSelect'),
+    contractsList: document.getElementById('contractsList'),
+    shardDisplay: document.getElementById('shardDisplay'),
+    upgradesList: document.getElementById('upgradesList'),
+    touchControls: document.getElementById('touchControls'),
+    modeInputs: Array.from(document.querySelectorAll('input[name=mode]')),
+    protocolInputs: Array.from(document.querySelectorAll('input[name=protocol]')),
+    inputModeInputs: Array.from(document.querySelectorAll('input[name=inputMode]')),
+    pageButtons: Array.from(document.querySelectorAll('[data-page-target]')),
+    pages: Array.from(document.querySelectorAll('[data-page]')),
+  };
+}
