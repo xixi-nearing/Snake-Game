@@ -25,9 +25,13 @@ const skinSelect = document.getElementById('skinSelect');
 const contractsList = document.getElementById('contractsList');
 const shardDisplay = document.getElementById('shardDisplay');
 const upgradesList = document.getElementById('upgradesList');
+const touchControls = document.getElementById('touchControls');
 
 const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
 const protocolInputs = Array.from(document.querySelectorAll('input[name="protocol"]'));
+const inputModeInputs = Array.from(document.querySelectorAll('input[name="inputMode"]'));
+const pageButtons = Array.from(document.querySelectorAll('[data-page-target]'));
+const pages = Array.from(document.querySelectorAll('[data-page]'));
 
 const CONFIG = {
   cols: 28,
@@ -39,6 +43,24 @@ const CONFIG = {
   bonusTime: 6,
   magnetRadius: 6,
   growthBase: 1,
+};
+
+const DIR_VECTORS = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+const KEY_TO_DIR = {
+  arrowup: 'up',
+  w: 'up',
+  arrowdown: 'down',
+  s: 'down',
+  arrowleft: 'left',
+  a: 'left',
+  arrowright: 'right',
+  d: 'right',
 };
 
 const STORAGE_KEY = 'neonSnakeDataV1';
@@ -148,6 +170,7 @@ const state = {
   paused: false,
   mode: 'classic',
   protocol: 'steady',
+  inputMode: 'keyboard',
   score: 0,
   level: 1,
   lives: 0,
@@ -190,6 +213,7 @@ let specialTimers = {
   power: 0,
   relic: 0,
 };
+let touchStart = null;
 
 let lastTime = 0;
 let accumulator = 0;
@@ -206,6 +230,8 @@ function init() {
   setMode(dataStore.settings.mode || 'classic', true);
   setProtocol(dataStore.settings.protocol || 'steady', true);
   skinSelect.value = dataStore.settings.skin || 'neon';
+  setInputMode(resolveInputMode(), true);
+  setActivePage('main', true);
 
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
@@ -235,6 +261,23 @@ function init() {
     persistStore();
   });
 
+  inputModeInputs.forEach((input) => {
+    input.addEventListener('change', (event) => {
+      if (event.target.checked) {
+        setInputMode(event.target.value);
+      }
+    });
+  });
+
+  pageButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.pageTarget;
+      if (target) {
+        setActivePage(target);
+      }
+    });
+  });
+
   modeInputs.forEach((input) => {
     input.addEventListener('change', (event) => {
       if (event.target.checked) {
@@ -258,6 +301,12 @@ function init() {
     }
   });
 
+  if (touchControls) {
+    touchControls.addEventListener('pointerdown', handleTouchPad);
+  }
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
   document.addEventListener('keydown', handleKeydown);
 
   resetGame(false);
@@ -268,7 +317,7 @@ function init() {
 
 function loadStore() {
   const fallback = {
-    settings: { sound: true, grid: true, mode: 'classic', skin: 'neon', protocol: 'steady' },
+    settings: { sound: true, grid: true, mode: 'classic', skin: 'neon', protocol: 'steady', inputMode: '' },
     best: { classic: 0, survival: 0, time: 0 },
     maxLevel: 1,
     seed: rngSeed,
@@ -303,6 +352,7 @@ function clearData() {
   dataStore = loadStore();
   setMode('classic', true);
   setProtocol('steady', true);
+  setInputMode(resolveInputMode(), true);
   resetGame(false);
 }
 
@@ -329,6 +379,44 @@ function setProtocol(protocol, skipReset = false) {
   if (!skipReset) {
     resetGame(false);
   }
+}
+
+function setActivePage(pageId, skipScroll = false) {
+  const target = pages.find((page) => page.dataset.page === pageId) || pages[0];
+  pages.forEach((page) => {
+    const active = page === target;
+    page.classList.toggle('is-active', active);
+    page.setAttribute('aria-hidden', String(!active));
+  });
+  pageButtons.forEach((button) => {
+    if (!button.classList.contains('nav-btn')) return;
+    button.classList.toggle('is-active', button.dataset.pageTarget === target.dataset.page);
+  });
+  document.body.dataset.page = target.dataset.page;
+  if (!skipScroll) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function setInputMode(mode, skipPersist = false) {
+  const resolved = mode === 'touch' ? 'touch' : 'keyboard';
+  state.inputMode = resolved;
+  inputModeInputs.forEach((input) => {
+    input.checked = input.value === resolved;
+  });
+  document.body.classList.toggle('touch-mode', resolved === 'touch');
+  if (touchControls) {
+    touchControls.setAttribute('aria-hidden', String(resolved !== 'touch'));
+  }
+  if (!skipPersist) {
+    dataStore.settings.inputMode = resolved;
+    persistStore();
+  }
+}
+
+function resolveInputMode() {
+  const prefersTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  return dataStore.settings.inputMode || (prefersTouch ? 'touch' : 'keyboard');
 }
 
 function buildSpecialTimers() {
@@ -420,6 +508,14 @@ function togglePause() {
   }
 }
 
+function applyDirection(dirName) {
+  const proposed = DIR_VECTORS[dirName];
+  if (!proposed) return;
+  if (!isOpposite(proposed, direction)) {
+    nextDirection = proposed;
+  }
+}
+
 function handleKeydown(event) {
   const key = event.key.toLowerCase();
   if (key === ' ') {
@@ -437,23 +533,45 @@ function handleKeydown(event) {
     return;
   }
 
-  const dirMap = {
-    arrowup: { x: 0, y: -1 },
-    w: { x: 0, y: -1 },
-    arrowdown: { x: 0, y: 1 },
-    s: { x: 0, y: 1 },
-    arrowleft: { x: -1, y: 0 },
-    a: { x: -1, y: 0 },
-    arrowright: { x: 1, y: 0 },
-    d: { x: 1, y: 0 },
-  };
+  if (state.inputMode === 'touch') return;
 
-  if (dirMap[key]) {
-    const proposed = dirMap[key];
-    if (!isOpposite(proposed, direction)) {
-      nextDirection = proposed;
-    }
+  const dirName = KEY_TO_DIR[key];
+  if (dirName) {
+    applyDirection(dirName);
   }
+}
+
+function handleTouchPad(event) {
+  if (state.inputMode !== 'touch') return;
+  const button = event.target.closest('button[data-dir]');
+  if (!button) return;
+  event.preventDefault();
+  applyDirection(button.dataset.dir);
+}
+
+function handleTouchStart(event) {
+  if (state.inputMode !== 'touch') return;
+  if (!event.changedTouches.length) return;
+  const touch = event.changedTouches[0];
+  touchStart = { x: touch.clientX, y: touch.clientY };
+  event.preventDefault();
+}
+
+function handleTouchEnd(event) {
+  if (state.inputMode !== 'touch' || !touchStart) return;
+  if (!event.changedTouches.length) return;
+  const touch = event.changedTouches[0];
+  const dx = touch.clientX - touchStart.x;
+  const dy = touch.clientY - touchStart.y;
+  const threshold = 24;
+  touchStart = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold) return;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    applyDirection(dx > 0 ? 'right' : 'left');
+  } else {
+    applyDirection(dy > 0 ? 'down' : 'up');
+  }
+  event.preventDefault();
 }
 
 function isOpposite(a, b) {

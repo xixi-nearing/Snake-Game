@@ -24,136 +24,216 @@
     </div>
   </header>
 
-  <main class="layout">
-    <section class="playfield">
-      <div class="canvas-shell">
-        <canvas id="gameCanvas" aria-label="Snake game canvas"></canvas>
-        <div class="overlay" id="overlay">
-          <div class="overlay__panel">
-            <h1>霓虹贪吃蛇</h1>
-            <p>点击“启动”或空格继续战斗。</p>
-            <button class="btn btn--primary" id="startBtn">启动</button>
+  <nav class="topnav" aria-label="界面导航">
+    <button class="nav-btn is-active" data-page-target="main">战局主控</button>
+    <button class="nav-btn" data-page-target="contracts">合约目标</button>
+    <button class="nav-btn" data-page-target="upgrades">霓晶改造</button>
+    <button class="nav-btn" data-page-target="tips">战术提示</button>
+  </nav>
+
+  <main class="pages">
+    <section class="page page--main layout is-active" data-page="main">
+      <section class="playfield">
+        <div class="canvas-shell">
+          <canvas id="gameCanvas" aria-label="Snake game canvas"></canvas>
+          <div class="touch-controls" id="touchControls" aria-hidden="true">
+            <button class="touch-btn touch-btn--up" data-dir="up" aria-label="向上"></button>
+            <button class="touch-btn touch-btn--left" data-dir="left" aria-label="向左"></button>
+            <button class="touch-btn touch-btn--right" data-dir="right" aria-label="向右"></button>
+            <button class="touch-btn touch-btn--down" data-dir="down" aria-label="向下"></button>
+          </div>
+          <div class="overlay" id="overlay">
+            <div class="overlay__panel">
+              <h1>霓虹贪吃蛇</h1>
+              <p>点击“启动”或空格继续战斗。</p>
+              <button class="btn btn--primary" id="startBtn">启动</button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="legend">
-        <div class="legend__item"><span class="dot dot--food"></span>能量晶体</div>
-        <div class="legend__item"><span class="dot dot--bonus"></span>爆燃核心</div>
-        <div class="legend__item"><span class="dot dot--toxic"></span>腐蚀残渣</div>
-        <div class="legend__item"><span class="dot dot--power"></span>异能模块</div>
-        <div class="legend__item"><span class="dot dot--relic"></span>霓晶遗物</div>
-        <div class="legend__item"><span class="dot dot--portal"></span>跃迁门</div>
-        <div class="legend__item"><span class="dot dot--hazard"></span>离子屏障</div>
+        <div class="legend">
+          <div class="legend__item"><span class="dot dot--food"></span>能量晶体</div>
+          <div class="legend__item"><span class="dot dot--bonus"></span>爆燃核心</div>
+          <div class="legend__item"><span class="dot dot--toxic"></span>腐蚀残渣</div>
+          <div class="legend__item"><span class="dot dot--power"></span>异能模块</div>
+          <div class="legend__item"><span class="dot dot--relic"></span>霓晶遗物</div>
+          <div class="legend__item"><span class="dot dot--portal"></span>跃迁门</div>
+          <div class="legend__item"><span class="dot dot--hazard"></span>离子屏障</div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <section class="panel__block">
+          <h2>战局</h2>
+          <div class="stats">
+            <div class="stat"><span>分数</span><strong id="scoreDisplay">0</strong></div>
+            <div class="stat"><span>最高</span><strong id="bestDisplay">0</strong></div>
+            <div class="stat"><span>云端最高</span><strong id="serverBestDisplay">-</strong></div>
+            <div class="stat"><span>等级</span><strong id="levelDisplay">1</strong></div>
+            <div class="stat"><span>速度</span><strong id="speedDisplay">0</strong></div>
+            <div class="stat"><span>倍率</span><strong id="multiplierDisplay">1x</strong></div>
+            <div class="stat"><span>连击</span><strong id="comboDisplay">0</strong></div>
+          </div>
+        </section>
+
+        <section class="panel__block">
+          <h2>模式</h2>
+          <div class="mode-select">
+            <label><input type="radio" name="mode" value="classic" checked /> 经典模式</label>
+            <label><input type="radio" name="mode" value="survival" /> 生存模式</label>
+            <label><input type="radio" name="mode" value="time" /> 限时模式</label>
+          </div>
+          <div class="mode-stats">
+            <div class="stat"><span>生命</span><strong id="livesDisplay">-</strong></div>
+            <div class="stat"><span>剩余时间</span><strong id="timeDisplay">-</strong></div>
+          </div>
+          <div class="protocol-select">
+            <label>
+              <input type="radio" name="protocol" value="steady" checked />
+              <span>稳态协议</span>
+              <em>更安全</em>
+            </label>
+            <label>
+              <input type="radio" name="protocol" value="surge" />
+              <span>过载协议</span>
+              <em>更高风险</em>
+            </label>
+            <label>
+              <input type="radio" name="protocol" value="sync" />
+              <span>连携协议</span>
+              <em>连击专精</em>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel__block">
+          <h2>异能增幅</h2>
+          <div class="effects" id="effectsList">
+            <div class="effect effect--empty">尚未激活</div>
+          </div>
+        </section>
+
+        <section class="panel__block panel__block--skin">
+          <h2>皮肤</h2>
+          <div class="skin-select">
+            <select id="skinSelect" aria-label="Snake skin">
+              <option value="neon">霓虹</option>
+              <option value="ocean">海洋</option>
+              <option value="forest">森林</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="panel__block">
+          <h2>控制</h2>
+          <div class="controls">
+            <button class="btn" id="pauseBtn">暂停</button>
+            <button class="btn" id="resetBtn">重置</button>
+            <label class="toggle">
+              <input type="checkbox" id="soundToggle" />
+              <span>音效</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="gridToggle" checked />
+              <span>网格</span>
+            </label>
+          </div>
+          <div class="input-modes" role="radiogroup" aria-label="控制模式">
+            <label><input type="radio" name="inputMode" value="keyboard" /> 键盘</label>
+            <label><input type="radio" name="inputMode" value="touch" /> 触屏</label>
+          </div>
+        </section>
+
+        <section class="panel__block panel__block--nav">
+          <h2>作战终端</h2>
+          <div class="page-links">
+            <button class="btn btn--ghost" data-page-target="contracts">合约目标</button>
+            <button class="btn btn--ghost" data-page-target="upgrades">霓晶改造</button>
+            <button class="btn btn--ghost" data-page-target="tips">战术提示</button>
+          </div>
+        </section>
+
+        <section class="panel__block panel__block--data">
+          <h2>数据管理</h2>
+          <button class="btn btn--ghost" id="clearDataBtn">清空记录</button>
+        </section>
+      </aside>
+    </section>
+
+    <section class="page page--contracts" data-page="contracts">
+      <div class="page__panel panel">
+        <div class="page__header">
+          <div>
+            <span class="page__eyebrow">Contracts</span>
+            <h2 class="page__title">合约目标</h2>
+          </div>
+          <button class="btn btn--ghost" data-page-target="main">返回战局</button>
+        </div>
+        <div class="page__content">
+          <p class="page__intro">完成合约可获得霓晶与额外分数，越快完成奖励越高。</p>
+          <div class="contracts" id="contractsList"></div>
+        </div>
       </div>
     </section>
 
-    <aside class="panel">
-      <section class="panel__block">
-        <h2>战局</h2>
-        <div class="stats">
-          <div class="stat"><span>分数</span><strong id="scoreDisplay">0</strong></div>
-          <div class="stat"><span>最高</span><strong id="bestDisplay">0</strong></div>
-          <div class="stat"><span>云端最高</span><strong id="serverBestDisplay">-</strong></div>
-          <div class="stat"><span>等级</span><strong id="levelDisplay">1</strong></div>
-          <div class="stat"><span>速度</span><strong id="speedDisplay">0</strong></div>
-          <div class="stat"><span>倍率</span><strong id="multiplierDisplay">1x</strong></div>
-          <div class="stat"><span>连击</span><strong id="comboDisplay">0</strong></div>
+    <section class="page page--upgrades" data-page="upgrades">
+      <div class="page__panel panel">
+        <div class="page__header">
+          <div>
+            <span class="page__eyebrow">Upgrades</span>
+            <h2 class="page__title">霓晶改造</h2>
+          </div>
+          <button class="btn btn--ghost" data-page-target="main">返回战局</button>
         </div>
-      </section>
-
-      <section class="panel__block">
-        <h2>模式</h2>
-        <div class="mode-select">
-          <label><input type="radio" name="mode" value="classic" checked /> 经典模式</label>
-          <label><input type="radio" name="mode" value="survival" /> 生存模式</label>
-          <label><input type="radio" name="mode" value="time" /> 限时模式</label>
+        <div class="page__content">
+          <div class="shard-bar">
+            <span>霓晶储备</span>
+            <strong id="shardDisplay">0</strong>
+          </div>
+          <div class="upgrades" id="upgradesList"></div>
+          <p class="page__note">改造效果永久生效，建议优先提升护盾与连击窗口。</p>
         </div>
-        <div class="mode-stats">
-          <div class="stat"><span>生命</span><strong id="livesDisplay">-</strong></div>
-          <div class="stat"><span>剩余时间</span><strong id="timeDisplay">-</strong></div>
+      </div>
+    </section>
+
+    <section class="page page--tips" data-page="tips">
+      <div class="page__panel panel">
+        <div class="page__header">
+          <div>
+            <span class="page__eyebrow">Tactics</span>
+            <h2 class="page__title">战术提示</h2>
+          </div>
+          <button class="btn btn--ghost" data-page-target="main">返回战局</button>
         </div>
-        <div class="protocol-select">
-          <label>
-            <input type="radio" name="protocol" value="steady" checked />
-            <span>稳态协议</span>
-            <em>更安全</em>
-          </label>
-          <label>
-            <input type="radio" name="protocol" value="surge" />
-            <span>过载协议</span>
-            <em>更高风险</em>
-          </label>
-          <label>
-            <input type="radio" name="protocol" value="sync" />
-            <span>连携协议</span>
-            <em>连击专精</em>
-          </label>
+        <div class="page__content page__content--grid">
+          <section class="panel__block">
+            <h2>即时策略</h2>
+            <ul class="tips">
+              <li>连击越高倍率越强，节奏要快。</li>
+              <li>护盾可抵挡一次撞击，别浪费。</li>
+              <li>磁力场能吸附附近能量。</li>
+              <li>时间模式可通过爆燃核心延时。</li>
+            </ul>
+          </section>
+          <section class="panel__block">
+            <h2>协议解读</h2>
+            <div class="protocol-cards">
+              <div class="protocol-card">
+                <strong>稳态协议</strong>
+                <span>更安全，护盾起始 +1。</span>
+              </div>
+              <div class="protocol-card">
+                <strong>过载协议</strong>
+                <span>高收益高风险，速度提升。</span>
+              </div>
+              <div class="protocol-card">
+                <strong>连携协议</strong>
+                <span>连击加成更强，适合节奏流。</span>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
-
-      <section class="panel__block">
-        <h2>异能增幅</h2>
-        <div class="effects" id="effectsList">
-          <div class="effect effect--empty">尚未激活</div>
-        </div>
-      </section>
-
-      <section class="panel__block panel__block--contracts">
-        <h2>合约目标</h2>
-        <div class="contracts" id="contractsList"></div>
-      </section>
-
-      <section class="panel__block panel__block--upgrades">
-        <h2>霓晶改造</h2>
-        <div class="shard-bar">
-          <span>霓晶储备</span>
-          <strong id="shardDisplay">0</strong>
-        </div>
-        <div class="upgrades" id="upgradesList"></div>
-      </section>
-
-      <section class="panel__block panel__block--skin">
-        <h2>皮肤</h2>
-        <div class="skin-select">
-          <select id="skinSelect" aria-label="Snake skin">
-            <option value="neon">霓虹</option>
-            <option value="ocean">海洋</option>
-            <option value="forest">森林</option>
-          </select>
-        </div>
-      </section>
-
-      <section class="panel__block">
-        <h2>控制</h2>
-        <div class="controls">
-          <button class="btn" id="pauseBtn">暂停</button>
-          <button class="btn" id="resetBtn">重置</button>
-          <label class="toggle">
-            <input type="checkbox" id="soundToggle" />
-            <span>音效</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" id="gridToggle" checked />
-            <span>网格</span>
-          </label>
-        </div>
-      </section>
-
-      <section class="panel__block panel__block--tips">
-        <h2>战术提示</h2>
-        <ul class="tips">
-          <li>连击越高倍率越强，节奏要快。</li>
-          <li>护盾可抵挡一次撞击，别浪费。</li>
-          <li>磁力场能吸附附近能量。</li>
-          <li>时间模式可通过爆燃核心延时。</li>
-        </ul>
-      </section>
-
-      <section class="panel__block panel__block--data">
-        <h2>数据管理</h2>
-        <button class="btn btn--ghost" id="clearDataBtn">清空记录</button>
-      </section>
-    </aside>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
