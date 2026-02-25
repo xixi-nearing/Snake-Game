@@ -36,6 +36,10 @@
       <section class="playfield">
         <div class="canvas-shell">
           <canvas id="gameCanvas" aria-label="Snake game canvas"></canvas>
+          <div class="quick-controls" aria-label="快捷控制">
+            <button class="btn btn--ghost quick-btn" id="quickPauseBtn">暂停</button>
+            <button class="btn btn--ghost quick-btn" id="quickResetBtn">重置</button>
+          </div>
           <div class="touch-controls" id="touchControls" aria-hidden="true">
             <button class="touch-btn touch-btn--up" data-dir="up" aria-label="向上"></button>
             <button class="touch-btn touch-btn--left" data-dir="left" aria-label="向左"></button>
@@ -242,6 +246,6 @@
     <div>收集能量、驾驭异能、突破高阶关卡</div>
   </footer>
 
-  <script type="module" src="main.js?v=20260225-7"></script>
+  <script type="module" src="main.js?v=20260225-8"></script>
 </body>
 </html>

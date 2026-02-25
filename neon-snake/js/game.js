@@ -25,6 +25,8 @@ const {
   startBtn,
   pauseBtn,
   resetBtn,
+  quickPauseBtn,
+  quickResetBtn,
   clearDataBtn,
   soundToggle,
   gridToggle,
@@ -155,6 +157,12 @@ function init() {
 
   pauseBtn.addEventListener('click', togglePause);
   resetBtn.addEventListener('click', () => resetGame(false));
+  if (quickPauseBtn) {
+    quickPauseBtn.addEventListener('click', togglePause);
+  }
+  if (quickResetBtn) {
+    quickResetBtn.addEventListener('click', () => resetGame(false));
+  }
   clearDataBtn.addEventListener('click', clearData);
 
   soundToggle.addEventListener('change', () => {

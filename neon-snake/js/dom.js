@@ -9,6 +9,8 @@ export function getDom() {
     startBtn: document.getElementById('startBtn'),
     pauseBtn: document.getElementById('pauseBtn'),
     resetBtn: document.getElementById('resetBtn'),
+    quickPauseBtn: document.getElementById('quickPauseBtn'),
+    quickResetBtn: document.getElementById('quickResetBtn'),
     clearDataBtn: document.getElementById('clearDataBtn'),
     soundToggle: document.getElementById('soundToggle'),
     gridToggle: document.getElementById('gridToggle'),

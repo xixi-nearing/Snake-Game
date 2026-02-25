@@ -271,6 +271,25 @@ body {
   overflow: hidden;
 }
 
+.quick-controls {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 3;
+}
+
+.quick-btn {
+  min-width: 64px;
+  padding: 0 0.6rem;
+}
+
 .touch-controls {
   position: absolute;
   left: 1rem;
@@ -917,7 +936,25 @@ body {
   }
 }
 
+@media (max-width: 900px) {
+  .quick-controls {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 520px) {
+  .quick-controls {
+    top: 0.45rem;
+    right: 0.45rem;
+  }
+
+  .quick-btn {
+    min-width: 58px;
+    font-size: 0.7rem;
+  }
+
   .touch-controls {
     left: 0.6rem;
     bottom: 0.6rem;
