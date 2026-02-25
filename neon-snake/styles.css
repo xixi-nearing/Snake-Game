@@ -296,6 +296,19 @@ body {
   position: relative;
 }
 
+.touch-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Share Tech Mono', sans-serif;
+  font-size: 1.1rem;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(36, 246, 255, 0.6);
+}
+
 .touch-btn::after {
   content: '';
   position: absolute;
@@ -322,6 +335,22 @@ body {
 .touch-btn--down {
   grid-column: 2;
   grid-row: 3;
+}
+
+.touch-btn--up::before {
+  content: '▲';
+}
+
+.touch-btn--left::before {
+  content: '◀';
+}
+
+.touch-btn--right::before {
+  content: '▶';
+}
+
+.touch-btn--down::before {
+  content: '▼';
 }
 
 .touch-mode .touch-controls {
@@ -612,6 +641,13 @@ body {
   accent-color: var(--neon-green);
 }
 
+.input-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .btn {
   min-height: 44px;
   border-radius: 0.85rem;
@@ -857,6 +893,46 @@ body {
 
   .page__content--grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .topnav {
+    position: sticky;
+    top: 0.4rem;
+    padding: 0.4rem;
+    border-radius: 1rem;
+    background: rgba(6, 8, 20, 0.78);
+    backdrop-filter: blur(8px);
+  }
+
+  .nav-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .touch-controls {
+    left: 0.6rem;
+    bottom: 0.6rem;
+    grid-template-columns: repeat(3, minmax(0, 44px));
+    grid-template-rows: repeat(3, minmax(0, 44px));
+  }
+
+  .touch-btn {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  .touch-btn::after {
+    inset: 11px;
   }
 }
 

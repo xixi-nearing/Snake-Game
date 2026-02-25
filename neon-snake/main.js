@@ -303,6 +303,7 @@ function init() {
 
   if (touchControls) {
     touchControls.addEventListener('pointerdown', handleTouchPad);
+    touchControls.addEventListener('touchstart', handleTouchPad, { passive: false });
   }
   canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
   canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
