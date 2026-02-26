@@ -15,7 +15,13 @@ import { getDom } from "./dom.js";
 import { createAudioController } from "./audio.js";
 import { createInputController } from "./input.js";
 import { createNavigation } from "./navigation.js";
-import { clearStore as clearStoreData, loadStore as loadStoreData, persistStore as persistStoreData } from "./storage.js";
+import {
+  clearStore as clearStoreData,
+  loadStore as loadStoreData,
+  loadLastUsername,
+  persistLastUsername,
+  persistStore as persistStoreData,
+} from "./storage.js";
 
 const dom = getDom();
 const {
@@ -29,6 +35,9 @@ const {
   gridToggle,
   statusBadge,
   seedDisplay,
+  usernameInput,
+  loginBtn,
+  loginStatus,
   scoreDisplay,
   bestDisplay,
   serverBestDisplay,
@@ -52,6 +61,8 @@ const audio = createAudioController();
 let inputController = null;
 
 let rngSeed = Date.now() % 100000;
+const USERNAME_RE = /^[A-Za-z0-9_-]+$/;
+const USERNAME_MAX = 32;
 
 const state = {
   running: false,
@@ -105,19 +116,127 @@ let specialTimers = {
 let lastTime = 0;
 let accumulator = 0;
 let rafId = null;
-let dataStore = loadStore();
+let dataStore = null;
+let currentUser = '';
+let loginBusy = false;
 let serverStats = null;
 let resizeObserver = null;
 
-function init() {
+function normalizeUsername(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.length > USERNAME_MAX) return '';
+  if (!USERNAME_RE.test(trimmed)) return '';
+  return trimmed;
+}
+
+function setLoginStatus(message, tone = '') {
+  loginStatus.textContent = message;
+  loginStatus.classList.remove('is-success', 'is-error', 'is-warn');
+  if (tone) {
+    loginStatus.classList.add(`is-${tone}`);
+  }
+}
+
+function setLoginBusyState(isBusy) {
+  loginBusy = isBusy;
+  usernameInput.disabled = isBusy;
+  loginBtn.disabled = isBusy;
+  loginBtn.textContent = isBusy ? '处理中' : '登录';
+}
+
+function applyStoreSettings() {
   rngSeed = dataStore.seed || rngSeed;
   seedDisplay.textContent = `SEED: ${String(rngSeed).padStart(4, '0')}`;
-
   soundToggle.checked = dataStore.settings.sound;
   gridToggle.checked = dataStore.settings.grid;
   setMode(dataStore.settings.mode || 'classic', true);
   setProtocol(dataStore.settings.protocol || 'steady', true);
   skinSelect.value = dataStore.settings.skin || 'neon';
+}
+
+function syncInputMode() {
+  if (inputController) {
+    inputController.setInputMode(inputController.resolveInputMode(), true);
+  }
+}
+
+async function loginUser(username, { silent = false, deferUi = false } = {}) {
+  if (loginBusy) return false;
+  const normalized = normalizeUsername(username);
+  if (!normalized) {
+    usernameInput.classList.add('is-error');
+    setLoginStatus('用户名仅支持数字、字母、-、_，且长度不超过32', 'error');
+    return false;
+  }
+
+  usernameInput.classList.remove('is-error');
+  setLoginBusyState(true);
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: normalized }),
+    });
+    if (!response.ok) throw new Error('bad response');
+    const payload = await response.json();
+    currentUser = normalized;
+    persistLastUsername(normalized);
+    dataStore = await loadStore();
+    if (!deferUi) {
+      applyStoreSettings();
+      syncInputMode();
+      resetGame(false);
+    }
+    if (!silent) {
+      const statusText = payload.status === 'new' ? `已注册：${normalized}` : `欢迎回来：${normalized}`;
+      setLoginStatus(statusText, 'success');
+    } else {
+      setLoginStatus(`已登录：${normalized}`, 'success');
+    }
+    fetchServerStats();
+    return true;
+  } catch (error) {
+    setLoginStatus('登录失败，请稍后重试', 'error');
+    return false;
+  } finally {
+    setLoginBusyState(false);
+  }
+}
+
+async function restoreUserSession() {
+  const saved = loadLastUsername();
+  if (saved) {
+    usernameInput.value = saved;
+    const success = await loginUser(saved, { silent: true, deferUi: true });
+    if (!success) {
+      setLoginStatus('未登录，仅本地保存', 'warn');
+    }
+  } else {
+    setLoginStatus('未登录，仅本地保存', 'warn');
+  }
+}
+
+async function init() {
+  loginBtn.addEventListener('click', () => {
+    void loginUser(usernameInput.value);
+  });
+  usernameInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void loginUser(usernameInput.value);
+    }
+  });
+  usernameInput.addEventListener('input', () => {
+    usernameInput.classList.remove('is-error');
+  });
+
+  await restoreUserSession();
+  if (!dataStore) {
+    dataStore = await loadStore();
+  }
+  applyStoreSettings();
 
   inputController = createInputController({
     dom,
@@ -153,7 +272,9 @@ function init() {
   });
 
   pauseBtn.addEventListener('click', togglePause);
-  clearDataBtn.addEventListener('click', clearData);
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener('click', () => void clearData());
+  }
 
   soundToggle.addEventListener('change', () => {
     dataStore.settings.sound = soundToggle.checked;
@@ -200,23 +321,20 @@ function init() {
   fetchServerStats();
 }
 
-function loadStore() {
-  return loadStoreData(STORAGE_KEY, rngSeed);
+async function loadStore() {
+  return loadStoreData(STORAGE_KEY, rngSeed, currentUser);
 }
 
 function persistStore() {
   dataStore.seed = rngSeed;
-  persistStoreData(STORAGE_KEY, dataStore);
+  persistStoreData(STORAGE_KEY, dataStore, currentUser).catch(() => {});
 }
 
-function clearData() {
-  clearStoreData(STORAGE_KEY);
-  dataStore = loadStore();
-  setMode('classic', true);
-  setProtocol('steady', true);
-  if (inputController) {
-    inputController.setInputMode(inputController.resolveInputMode(), true);
-  }
+async function clearData() {
+  await clearStoreData(STORAGE_KEY, currentUser);
+  dataStore = await loadStore();
+  applyStoreSettings();
+  syncInputMode();
   resetGame(false);
 }
 
@@ -1711,7 +1829,12 @@ function formatTime(seconds) {
 
 async function fetchServerStats() {
   try {
-    const response = await fetch('/api/stats', { cache: 'no-store' });
+    if (!currentUser) {
+      serverStats = null;
+      serverBestDisplay.textContent = '-';
+      return;
+    }
+    const response = await fetch(`/api/stats?user=${encodeURIComponent(currentUser)}`, { cache: 'no-store' });
     if (!response.ok) throw new Error('bad response');
     const payload = await response.json();
     serverStats = payload;
@@ -1725,14 +1848,29 @@ async function fetchServerStats() {
 async function sendScoreToServer() {
   if (!state.score || state.score <= 0) return;
   try {
+    if (!currentUser) return;
+    const completedContracts = state.contracts.filter((contract) => contract.done).length;
     const response = await fetch('/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        username: currentUser,
         mode: state.mode,
         score: state.score,
         level: state.level,
         duration: state.stepCount,
+        seed: rngSeed,
+        protocol: state.protocol,
+        skin: dataStore.settings.skin,
+        shardsEarned: state.runShards,
+        contractsCompleted: completedContracts,
+        contractsTotal: state.contracts.length,
+        lives: state.lives,
+        timeLeft: state.timeLeft,
+        multiplier: state.multiplier,
+        combo: state.combo,
+        upgrades: dataStore.upgrades,
+        effects: state.effects,
       }),
     });
     if (!response.ok) throw new Error('bad response');

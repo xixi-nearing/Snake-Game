@@ -19,8 +19,28 @@
       <span class="brand__tag">多维玩法 · 霓虹竞速 · 高风险高回报</span>
     </div>
     <div class="status">
-      <span class="status__badge" id="statusBadge">READY</span>
-      <span class="status__seed" id="seedDisplay">SEED: 0000</span>
+      <div class="status__group">
+        <span class="status__badge" id="statusBadge">READY</span>
+        <span class="status__seed" id="seedDisplay">SEED: 0000</span>
+      </div>
+      <div class="login" aria-label="用户登录">
+        <label class="login__label" for="usernameInput">用户名</label>
+        <input
+          class="login__input"
+          id="usernameInput"
+          type="text"
+          inputmode="text"
+          autocapitalize="off"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="32"
+          pattern="[A-Za-z0-9_-]+"
+          placeholder="用户名"
+          aria-label="输入用户名"
+        />
+        <button class="btn btn--ghost login__btn" id="loginBtn" type="button">登录</button>
+        <span class="login__status" id="loginStatus">未登录</span>
+      </div>
     </div>
   </header>
 
@@ -145,19 +165,6 @@
           <p class="input-hint">触屏模式会在画面下方显示方向键，并支持画布滑动转向。</p>
         </section>
 
-        <section class="panel__block panel__block--nav">
-          <h2>作战终端</h2>
-          <div class="page-links">
-            <button class="btn btn--ghost" data-page-target="contracts">合约目标</button>
-            <button class="btn btn--ghost" data-page-target="upgrades">霓晶改造</button>
-            <button class="btn btn--ghost" data-page-target="tips">战术提示</button>
-          </div>
-        </section>
-
-        <section class="panel__block panel__block--data">
-          <h2>数据管理</h2>
-          <button class="btn btn--ghost" id="clearDataBtn">清空记录</button>
-        </section>
       </aside>
     </section>
 

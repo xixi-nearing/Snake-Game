@@ -3,3 +3,9 @@ snake.png
 
 # OS artifacts
 .DS_Store
+
+# Node dependencies
+node_modules
+
+# Local database files
+data

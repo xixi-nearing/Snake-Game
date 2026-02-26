@@ -1,0 +1,13 @@
+{
+  "name": "neon-snake-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Neon Serpent server with SQLite persistence",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0"
+  }
+}

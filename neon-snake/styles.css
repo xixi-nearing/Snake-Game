@@ -246,6 +246,13 @@ body {
   flex-wrap: wrap;
 }
 
+.status__group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
 .status__badge {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
@@ -264,6 +271,70 @@ body {
   background: rgba(7, 10, 22, 0.65);
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.login {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.login__label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.login__input {
+  min-width: 140px;
+  height: 34px;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(123, 92, 255, 0.35);
+  background: rgba(6, 10, 22, 0.72);
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login__input::placeholder {
+  color: rgba(200, 210, 255, 0.45);
+}
+
+.login__input:focus {
+  border-color: rgba(36, 246, 255, 0.65);
+  box-shadow: 0 0 0 2px rgba(36, 246, 255, 0.2);
+}
+
+.login__input.is-error {
+  border-color: rgba(255, 92, 122, 0.7);
+  box-shadow: 0 0 0 2px rgba(255, 92, 122, 0.2);
+}
+
+.login__btn {
+  min-height: 34px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08rem;
+}
+
+.login__status {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.login__status.is-success {
+  color: #4bff88;
+}
+
+.login__status.is-error {
+  color: #ff5c7a;
+}
+
+.login__status.is-warn {
+  color: #ffd166;
 }
 
 .layout {
@@ -954,6 +1025,19 @@ body {
   .topbar {
     grid-template-columns: 1fr;
     align-items: flex-start;
+  }
+
+  .status {
+    width: 100%;
+  }
+
+  .login {
+    width: 100%;
+  }
+
+  .login__input {
+    flex: 1 1 160px;
+    min-width: 0;
   }
 
   .topnav {

@@ -21,7 +21,7 @@
 - 视觉：霓虹 UI、粒子特效（星屑/花瓣/叶片/彩虹/棱镜）
 - 皮肤：霓虹 / 海洋 / 森林
 - 多页面面板：合约/改造/战术提示独立页面，移动端可完整访问
-- 音效 + 本地数据持久化（localStorage）
+- 音效 + 服务端 SQLite 持久化（按用户名区分数据）
 - 可选：云端最高分（/api 接口）
 
 ## Controls
@@ -32,16 +32,16 @@
 - 面板按钮：暂停、重置、音效、网格开关
 
 ## Run Locally
-直接用静态服务器打开即可：
+启动 Node.js 服务（包含 SQLite 数据库与静态资源）：
 
 ```bash
-# 任选其一
-python3 -m http.server
-# 或
-npx serve .
+npm install
+npm start
 ```
 
-然后访问 `http://localhost:8000`（或命令提示的端口）。
+然后访问 `http://localhost:3000`。
+
+页面顶部输入用户名即可登录（仅允许数字/大小写字母/-/_）；新用户名会自动注册。数据按用户名隔离存储在 `data/neon-snake.sqlite`。
 
 ## Project Structure
 - `neon-snake/`：前端游戏源码
