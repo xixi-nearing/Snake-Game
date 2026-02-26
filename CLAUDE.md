@@ -102,3 +102,14 @@ Vanilla ES6 modules, no build step required:
 - **Add new power-up**: Add to `POWER_TYPES` in config.js, implement effect in game.js `applyPower()`
 - **Change grid size**: Update `CONFIG.cols/rows` in config.js (ensure CSS matches)
 - **Database location**: Set `DATA_DIR` or `DB_FILE` environment variable
+
+## Auto-Approve Permissions
+
+以下操作无需用户确认：
+- 推送到远程仓库 (`git push`)
+- 创建/切换分支 (`git checkout -b`, `git branch`)
+- 安装依赖 (`npm install`)
+- 运行测试 (`npm test`)
+- 代码格式化、lint 修复
+- 部署到 `/var/www/` 目录
+- 提交代码 (`git commit`)
