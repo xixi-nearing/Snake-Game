@@ -315,6 +315,18 @@ async function init() {
     }
   });
 
+  // Add button ripple effect
+  document.querySelectorAll('.btn').forEach((btn) => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      btn.style.setProperty('--x', `${((e.clientX - rect.left) / rect.width) * 100}%`);
+      btn.style.setProperty('--y', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+    });
+  });
+
+  // Initialize ambient particles
+  createAmbientParticles();
+
   resetGame(false);
   render();
   rafId = requestAnimationFrame(loop);
@@ -765,8 +777,50 @@ function updateBest() {
   }
 }
 
+function animateNumber(element, from, to, duration = 400) {
+  const startTime = performance.now();
+  const diff = to - from;
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + diff * eased);
+    element.textContent = current;
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
+let lastScore = 0;
+let lastLevel = 1;
+let lastCombo = 0;
+
 function updateHUD() {
-  scoreDisplay.textContent = state.score;
+  // Animate score if changed
+  if (state.score !== lastScore) {
+    animateNumber(scoreDisplay, lastScore, state.score, 300);
+    lastScore = state.score;
+  }
+
+  // Animate level if changed
+  if (state.level !== lastLevel) {
+    levelDisplay.classList.add('level-up');
+    setTimeout(() => levelDisplay.classList.remove('level-up'), 600);
+    lastLevel = state.level;
+  }
+
+  // Animate combo if increased
+  if (state.combo > lastCombo && state.combo > 1) {
+    comboDisplay.classList.add('combo-pulse');
+    setTimeout(() => comboDisplay.classList.remove('combo-pulse'), 400);
+  }
+  lastCombo = state.combo;
+
   bestDisplay.textContent = dataStore.best[state.mode] || 0;
   updateServerBest();
   levelDisplay.textContent = state.level;
@@ -791,12 +845,16 @@ function renderEffects() {
   POWER_TYPES.forEach((power) => {
     if (power.id === 'shield') {
       if (state.shield > 0) {
-        active.push({ label: `护盾 x${state.shield}`, time: '--' });
+        active.push({ label: `护盾 x${state.shield}`, time: '--', progress: 100 });
       }
     } else if (state.effects[power.id] > 0) {
+      const maxDuration = power.duration;
+      const current = state.effects[power.id];
+      const progress = Math.round((current / maxDuration) * 100);
       active.push({
         label: power.label,
-        time: `${Math.ceil(state.effects[power.id] / 1000)}s`,
+        time: `${Math.ceil(current / 1000)}s`,
+        progress,
       });
     }
   });
@@ -813,6 +871,7 @@ function renderEffects() {
   active.forEach((effect) => {
     const row = document.createElement('div');
     row.className = 'effect effect--active';
+    row.style.setProperty('--progress', `${effect.progress}%`);
     row.innerHTML = `<span>${effect.label}</span><strong>${effect.time}</strong>`;
     effectsList.appendChild(row);
   });
@@ -907,6 +966,9 @@ function grantShards(amount) {
   state.runShards += amount;
   persistStore();
   state.shopDirty = true;
+  // Add sparkle animation
+  shardDisplay.classList.add('shard-sparkle');
+  setTimeout(() => shardDisplay.classList.remove('shard-sparkle'), 500);
 }
 
 function updateShardDisplay() {
@@ -1298,6 +1360,25 @@ function noise2(x, y, seed) {
 function rainbowColor(hue) {
   const normalized = ((hue % 360) + 360) % 360;
   return `hsl(${normalized}, 90%, 62%)`;
+}
+
+function createAmbientParticles() {
+  const container = document.getElementById('ambientParticles');
+  if (!container) return;
+
+  const colors = ['var(--neon-cyan)', 'var(--neon-purple)', 'var(--neon-pink)', 'var(--neon-green)'];
+  const particleCount = 15;
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'ambient__particle';
+    particle.style.left = `${Math.random() * 100}%`;
+    particle.style.animationDelay = `${Math.random() * 8}s`;
+    particle.style.animationDuration = `${8 + Math.random() * 4}s`;
+    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.boxShadow = `0 0 ${6 + Math.random() * 8}px currentColor`;
+    container.appendChild(particle);
+  }
 }
 
 function getSkinConfig() {
@@ -1811,6 +1892,12 @@ function hideOverlay() {
 
 function setStatus(text) {
   statusBadge.textContent = text;
+  statusBadge.classList.remove('running', 'paused');
+  if (text === 'RUNNING') {
+    statusBadge.classList.add('running');
+  } else if (text === 'PAUSED') {
+    statusBadge.classList.add('paused');
+  }
 }
 
 function pulseScreen() {
